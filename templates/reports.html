@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Reports{% endblock %}
+{% block content %}
+<div class="page-head no-print">
+  <div><h1>Reports</h1><p>Generate inventory, movement, usage and valuation reports. Print, export to PDF or download CSV.</p></div>
+</div>
+<div class="card no-print" style="margin-bottom:16px">
+  <form class="filters" method="get" action="{{ url_for('reports') }}" style="border-bottom:0">
+    <div class="field" style="min-width:230px"><label for="report-kind">Report</label>
+      <select id="report-kind" name="kind">{% for k, v in REPORTS.items() %}<option value="{{ k }}" {{ 'selected' if args.kind == k }}>{{ v }}</option>{% endfor %}</select></div>
+    <div class="field" data-needs-item style="min-width:200px"><label for="item_id">Item</label>
+      <select id="item_id" name="item_id"><option value="">Select item</option>
+        {% for i in items %}<option value="{{ i.id }}" {{ 'selected' if args.item_id == i.id|string }}>{{ i.item_code }} - {{ i.name }}</option>{% endfor %}</select></div>
+    <div class="field" data-needs-dates><label for="date_from">From</label><input id="date_from" type="date" name="date_from" value="{{ args.date_from }}"></div>
+    <div class="field" data-needs-dates><label for="date_to">To</label><input id="date_to" type="date" name="date_to" value="{{ args.date_to }}"></div>
+    <button class="btn btn-primary" type="submit"><i data-lucide="play" class="icon-sm"></i>Generate</button>
+  </form>
+</div>
+
+{% if rep %}
+<div class="card">
+  <div class="report-head">
+    <div class="card-head" style="padding:0;border:0">
+      <div><div class="muted">{{ rep.store }}</div><h2 style="font-size:1.2rem">{{ rep.title }}</h2></div>
+      <div class="actions no-print">
+        <button class="btn" type="button" data-print><i data-lucide="printer" class="icon-sm"></i>Print</button>
+        <a class="btn" href="{{ url_for('reports') }}?{{ query }}&format=pdf"><i data-lucide="file-down" class="icon-sm"></i>PDF</a>
+        <a class="btn" href="{{ url_for('reports') }}?{{ query }}&format=csv"><i data-lucide="file-spreadsheet" class="icon-sm"></i>CSV</a>
+      </div>
+    </div>
+    <div class="report-meta"><span>Generated: {{ rep.generated_at }}</span>{% if rep.period %}<span>Period: {{ rep.period }}</span>{% endif %}<span>Rows: {{ rep.rows|length }}</span></div>
+  </div>
+  <div class="summary-grid">{% for k, v in rep.summary %}<div><b>{{ v }}</b><span>{{ k }}</span></div>{% endfor %}</div>
+  <div class="table-wrap"><table>
+    <thead><tr>{% for c in rep.columns %}<th class="{{ 'num' if loop.index0 in rep.right_cols }}">{{ c }}</th>{% endfor %}</tr></thead>
+    <tbody>
+    {% for row in rep.rows %}<tr>{% for c in row %}<td class="{{ 'num' if loop.index0 in rep.right_cols }}">{{ c }}</td>{% endfor %}</tr>
+    {% else %}<tr><td colspan="{{ rep.columns|length }}" class="empty">No records for the selected criteria.</td></tr>{% endfor %}
+    </tbody></table></div>
+  {% for n in rep.notes %}<p class="muted" style="padding:0 18px 14px;margin:8px 0 0;font-size:.82rem">{{ n }}</p>{% endfor %}
+</div>
+{% elif not request.args.get('kind') %}
+<div class="card"><div class="empty">Choose a report above and select <strong>Generate</strong>.</div></div>
+{% endif %}
+{% endblock %}

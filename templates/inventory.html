@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% from "_macros.html" import status_badge, pager, sort_th, gauge, cover %}
+{% block title %}Inventory{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Inventory items</h1><p>Register, search and manage seeds, fertilizers, chemicals and tools.</p></div>
+  <div class="actions"><a class="btn btn-primary" href="{{ url_for('item_new') }}"><i data-lucide="plus" class="icon-sm"></i>New item</a></div>
+</div>
+<div class="card">
+  <form class="filters" method="get" action="{{ url_for('inventory') }}">
+    <div class="field" style="flex:1;min-width:200px"><label for="q">Search</label>
+      <input id="q" name="q" value="{{ args.q }}" placeholder="Name, item ID, description or supplier"></div>
+    <div class="field"><label for="category">Category</label>
+      <select id="category" name="category" data-autosubmit><option value="">All categories</option>
+        {% for c in categories %}<option value="{{ c.id }}" {{ 'selected' if args.category == c.id|string }}>{{ c.name }}</option>{% endfor %}</select></div>
+    <div class="field"><label for="status">Stock status</label>
+      <select id="status" name="status" data-autosubmit><option value="">All</option>
+        <option value="OK" {{ 'selected' if args.status == 'OK' }}>In stock</option>
+        <option value="LOW" {{ 'selected' if args.status == 'LOW' }}>Low stock</option>
+        <option value="OUT" {{ 'selected' if args.status == 'OUT' }}>Out of stock</option></select></div>
+    <input type="hidden" name="sort" value="{{ args.sort }}"><input type="hidden" name="order" value="{{ args.order }}">
+    <button class="btn" type="submit"><i data-lucide="search" class="icon-sm"></i>Search</button>
+    {% if args.q or args.category or args.status %}<a class="btn btn-ghost" href="{{ url_for('inventory') }}">Clear</a>{% endif %}
+  </form>
+  <div class="table-wrap"><table>
+    <thead><tr>
+      {{ sort_th('Item ID', 'code', args, 'inventory') }}{{ sort_th('Item', 'name', args, 'inventory') }}{{ sort_th('Category', 'category', args, 'inventory') }}
+      {{ sort_th('In stock', 'quantity', args, 'inventory', 'num') }}<th style="min-width:130px">Level vs minimum</th><th>Days of cover</th>      <th>Status</th><th></th></tr></thead>
+    <tbody>
+    {% for i in items %}
+      <tr>
+        <td class="nowrap ref">{{ i.item_code }}</td>
+        <td><a href="{{ url_for('item_detail', item_id=i.id) }}">{{ i.name }}</a>{% if i.is_sample %} <span class="badge sample">Sample</span>{% endif %}
+            <span class="sub">{{ i.supplier or 'No supplier' }}</span></td>
+        <td><span class="dot c{{ i.category_id % 8 }}"></span>{{ i.category }}</td>
+        <td class="num">{{ i.quantity|qty }} {{ i.unit }}</td>
+        <td>{{ gauge(i.quantity, i.min_threshold, i.status) }}<div class="gauge-cap">min {{ i.min_threshold|qty }}</div></td>
+        <td style="min-width:130px">{% if i.is_returnable %}<span class="badge tool">Returnable tool</span>{% else %}{{ cover(fcmap[i.id], 14) }}{% endif %}</td>
+        <td>{{ status_badge(i.status) }}</td>
+        <td><div class="row-actions">
+          <a class="btn btn-sm btn-ghost" href="{{ url_for('item_detail', item_id=i.id) }}" title="View"><i data-lucide="eye" class="icon-sm"></i></a>
+          <a class="btn btn-sm btn-ghost" href="{{ url_for('item_edit', item_id=i.id) }}" title="Edit"><i data-lucide="pencil" class="icon-sm"></i></a>
+        </div></td>
+      </tr>
+    {% else %}<tr><td colspan="8" class="empty">No items match your search.</td></tr>{% endfor %}
+    </tbody></table></div>
+  {{ pager(pg, 'inventory', args) }}
+</div>
+{% endblock %}

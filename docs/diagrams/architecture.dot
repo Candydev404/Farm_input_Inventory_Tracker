@@ -1,0 +1,12 @@
+digraph A { rankdir=LR; graph [fontname="Helvetica", dpi=170, pad=0.25]; node [fontname="Helvetica", fontsize=11]; edge [fontname="Helvetica", fontsize=10];
+ node [shape=box, style="rounded,filled", fillcolor="#f1f8f3", color="#1f6f43", penwidth=1.3];
+ subgraph cluster_b { label="Web browser (client)"; style="rounded"; color="#8aa597";
+   ui [label="HTML pages + CSS\nresponsive layout"]; js [label="JavaScript\nclient-side validation,\nconfirm dialog, live stock hint"]; lib [label="Chart.js (charts)\nLucide (icons)"]; }
+ subgraph cluster_s { label="Flask application (server, app.py)"; style="rounded"; color="#8aa597";
+   auth [label="Authentication\nsessions, CSRF,\nrole checks"]; val [label="Validation layer\n(server-side)"]; stock [label="Stock service\natomic IN / OUT,\nno negative stock"]; alert [label="Alert service\nLOW / OUT\nnotifications"]; rep [label="Report builder\nHTML, CSV, PDF"]; tpl [label="Jinja2 templates\n(escaped output)"]; }
+ subgraph cluster_d { label="Data layer"; style="rounded"; color="#8aa597";
+   db [shape=cylinder, label="SQLite\nfarm_inventory.db", fillcolor="#e3f1e8"]; }
+ ui -> auth [label="HTTP request"]; js -> val [style=dashed, label="form POST"];
+ auth -> val; val -> stock; stock -> alert; stock -> db [label="SQL (parameterised)"]; alert -> db; rep -> db; auth -> db; val -> rep [style=dashed];
+ tpl -> ui [label="HTML response"]; rep -> tpl; stock -> tpl; lib -> ui [style=dashed, dir=none];
+}

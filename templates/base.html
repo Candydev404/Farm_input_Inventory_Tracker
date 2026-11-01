@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Dashboard{% endblock %} | Farm Input Inventory Tracker</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+{% set ep = request.endpoint or '' %}
+<header class="topnav">
+  <div class="in">
+    <a class="brand" href="{{ url_for('dashboard') }}">
+      <svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="6" fill="#2e6b3b"/><path d="M5 24 Q16 17 27 24 M5 19 Q16 12 27 19 M5 14 Q16 7 27 14" fill="none" stroke="#f0b44a" stroke-width="2" stroke-linecap="round"/></svg>
+      <span><b>Field Ledger</b><small>Farm input inventory</small></span>
+    </a>
+    <button class="btn btn-sm" id="menu-toggle" type="button" aria-label="Open menu"><i data-lucide="menu"></i></button>
+    <nav class="links" id="sidebar" aria-label="Main">
+      <a href="{{ url_for('dashboard') }}" class="{{ 'active' if ep == 'dashboard' }}"><i data-lucide="layout-dashboard" class="icon-sm"></i>Dashboard</a>
+      <a href="{{ url_for('inventory') }}" class="{{ 'active' if ep in ('inventory','item_detail','item_edit','item_new') }}"><i data-lucide="package" class="icon-sm"></i>Items</a>
+      <a href="{{ url_for('stock_history') }}" class="{{ 'active' if ep in ('stock_history','stock_in','stock_out') }}"><i data-lucide="book-open" class="icon-sm"></i>Stock ledger</a>
+      <a href="{{ url_for('loans') }}" class="{{ 'active' if ep in ('loans','stock_lend','stock_return') }}"><i data-lucide="wrench" class="icon-sm"></i>Tool loans</a>
+      <a href="{{ url_for('alerts') }}" class="{{ 'active' if ep == 'alerts' }}"><i data-lucide="triangle-alert" class="icon-sm"></i>Alerts &amp; reorder
+        {% if unread_alerts %}<span class="badge count">{{ unread_alerts }}</span>{% endif %}</a>
+      <a href="{{ url_for('reports') }}" class="{{ 'active' if ep == 'reports' }}"><i data-lucide="file-bar-chart" class="icon-sm"></i>Reports</a>
+      <a href="{{ url_for('settings') }}" class="{{ 'active' if ep == 'settings' }}"><i data-lucide="settings" class="icon-sm"></i>Settings</a>
+    </nav>
+    <div class="who">
+      <div class="avatar">{{ current_user.full_name[:1]|upper }}</div>
+      <div class="meta">{{ current_user.full_name }}<small>{{ current_user.role }}</small></div>
+      <form method="post" action="{{ url_for('logout') }}">
+        <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+        <button class="btn btn-sm" type="submit" title="Sign out"><i data-lucide="log-out" class="icon-sm"></i></button>
+      </form>
+    </div>
+  </div>
+</header>
+<main class="content">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}<div class="flashes" role="status">
+      {% for cat, msg in messages %}<div class="flash {{ cat }}"><i data-lucide="{{ {'success':'circle-check','error':'circle-alert','info':'info'}.get(cat,'info') }}"></i><span>{{ msg }}</span></div>{% endfor %}
+    </div>{% endif %}
+  {% endwith %}
+  {% block content %}{% endblock %}
+</main>
+
+<dialog id="confirm-dialog" aria-labelledby="dlg-title">
+  <div class="dlg-body"><h3 id="dlg-title" data-title></h3><p class="muted" data-msg></p><div data-extra></div></div>
+  <div class="dlg-foot">
+    <button type="button" class="btn" data-cancel>Cancel</button>
+    <button type="button" class="btn btn-danger" data-ok>Confirm</button>
+  </div>
+</dialog>
+
+<script src="{{ url_for('static', filename='vendor/lucide.min.js') }}"></script>
+<script src="{{ url_for('static', filename='vendor/chart.umd.min.js') }}"></script>
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

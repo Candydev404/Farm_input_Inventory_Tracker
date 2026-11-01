@@ -1,0 +1,13 @@
+digraph D1 { rankdir=LR; graph [fontname="Helvetica", dpi=170, pad=0.25]; node [fontname="Helvetica", fontsize=11]; edge [fontname="Helvetica", fontsize=10]; nodesep=0.45; ranksep=1.1;
+ ext [shape=box, label="Storekeeper /\nAdministrator", style=filled, fillcolor="#fff7e6", color="#b26a00", penwidth=1.4];
+ node [shape=ellipse, style=filled, fillcolor="#e3f1e8", color="#1f6f43", penwidth=1.3];
+ p1 [label="1.0\nAuthenticate\nusers"]; p2 [label="2.0\nManage\nitems"]; p3 [label="3.0\nRecord stock,\nloans, returns"]; p4 [label="4.0\nMonitor alerts\nand forecast"]; p5 [label="5.0\nGenerate\nreports"]; p6 [label="6.0\nMaintain\nsettings"];
+ node [shape=box, style="filled", fillcolor="#ffffff", color="#4b6b5a", penwidth=1.2, peripheries=1];
+ d1 [label="D1  users"]; d2 [label="D2  inventory_items,\ncategories, suppliers"]; d3 [label="D3  stock_transactions"]; d4 [label="D4  system_notifications"]; d5 [label="D5  settings, audit_logs"];
+ ext -> p1 [label="credentials"]; p1 -> d1 [dir=both]; 
+ ext -> p2 [label="item details"]; p2 -> d2 [dir=both]; p2 -> d5 [label="audit entry"];
+ ext -> p3 [label="stock in / out"]; p3 -> d2 [label="update quantity", dir=both]; p3 -> d3 [label="new transaction"]; p3 -> d4 [label="alert state"];
+ d2 -> p4; d4 -> p4 [dir=both]; p4 -> ext [label="alerts"];
+ ext -> p5 [label="report request"]; d2 -> p5; d3 -> p5; p5 -> ext [label="report"];
+ ext -> p6 [label="settings"]; p6 -> d5 [dir=both]; p6 -> d2 [label="categories"];
+}

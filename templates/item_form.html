@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% from "_macros.html" import field_error %}
+{% set editing = item is not none %}
+{% block title %}{{ 'Edit item' if editing else 'New item' }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>{{ 'Edit item' if editing else 'Register new item' }}</h1>
+    <p>{% if editing %}Quantity changes only through recorded stock movements, so the history stays complete.{% else %}Add the opening stock here or record it later as a stock-in.{% endif %}</p></div>
+</div>
+<div class="card"><div class="card-body">
+<form method="post" data-validate novalidate>
+  <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+  <div class="form-grid">
+    <div class="field {{ 'has-error' if errors.name }}"><label for="name">Item name <span class="req">*</span></label>
+      <input id="name" name="name" maxlength="100" required value="{{ form.get('name', '') }}">{{ field_error(errors, 'name') }}</div>
+    <div class="field {{ 'has-error' if errors.item_code }}"><label for="item_code">Item ID</label>
+      <input id="item_code" name="item_code" maxlength="20" placeholder="{{ 'Auto-generated if left blank' }}" value="{{ form.get('item_code', '') }}">
+      <span class="hint">Letters, digits and hyphens. Leave blank to generate from the category.</span>{{ field_error(errors, 'item_code') }}</div>
+    <div class="field {{ 'has-error' if errors.category_id }}"><label for="category_id">Category <span class="req">*</span></label>
+      <select id="category_id" name="category_id" required><option value="">Select category</option>
+        {% for c in categories %}<option value="{{ c.id }}" {{ 'selected' if form.get('category_id')|string == c.id|string }}>{{ c.name }}</option>{% endfor %}</select>
+      {{ field_error(errors, 'category_id') }}</div>
+    <div class="field {{ 'has-error' if errors.supplier }}"><label for="supplier">Supplier</label>
+      <input id="supplier" name="supplier" list="suppliers" maxlength="100" value="{{ form.get('supplier', '') or '' }}">
+      <datalist id="suppliers">{% for s in suppliers %}<option value="{{ s.name }}">{% endfor %}</datalist>
+      <span class="hint">Pick an existing supplier or type a new one.</span>{{ field_error(errors, 'supplier') }}</div>
+    <div class="field {{ 'has-error' if errors.unit }}"><label for="unit">Unit of measurement <span class="req">*</span></label>
+      <input id="unit" name="unit" list="units" maxlength="20" required value="{{ form.get('unit', '') }}" placeholder="e.g. kg, bag, piece">
+      <datalist id="units">{% for u in UNITS %}<option value="{{ u }}">{% endfor %}</datalist>{{ field_error(errors, 'unit') }}</div>
+    <div class="field {{ 'has-error' if errors.min_threshold }}"><label for="min_threshold">Minimum stock threshold <span class="req">*</span></label>
+      <input id="min_threshold" name="min_threshold" type="number" step="any" min="0" required value="{{ form.get('min_threshold', '') }}">
+      <span class="hint">An alert is raised when stock reaches this level.</span>{{ field_error(errors, 'min_threshold') }}</div>
+    <div class="field {{ 'has-error' if errors.unit_price }}"><label for="unit_price">Unit purchase price <span class="req">*</span></label>
+      <input id="unit_price" name="unit_price" type="number" step="0.01" min="0" required value="{{ form.get('unit_price', '') }}">{{ field_error(errors, 'unit_price') }}</div>
+    {% if not editing %}
+    <div class="field {{ 'has-error' if errors.opening_qty }}"><label for="opening_qty">Opening stock</label>
+      <input id="opening_qty" name="opening_qty" type="number" step="any" min="0" value="{{ form.get('opening_qty', '') }}" placeholder="0">
+      <span class="hint">Recorded as a stock-in transaction.</span>{{ field_error(errors, 'opening_qty') }}</div>
+    {% else %}
+    <div class="field"><label>Quantity currently in stock</label><div class="stock-hint">{{ item.quantity|qty }} {{ item.unit }} (change via stock in / stock out)</div></div>
+    {% endif %}
+    <div class="field full {{ 'has-error' if errors.is_returnable }}">
+      <label class="check"><input type="checkbox" name="is_returnable" value="1" {{ 'checked' if form.get('is_returnable') in (1, '1', True, 'on') }}>
+        <span>Returnable tool<br><span class="hint">Tick for items that are lent out and brought back (hoes, sprayers, wheelbarrows). They are tracked through lend and return instead of being used up.</span></span></label>
+      {{ field_error(errors, 'is_returnable') }}</div>
+    <div class="field full {{ 'has-error' if errors.description }}"><label for="description">Description</label>
+      <textarea id="description" name="description" maxlength="500">{{ form.get('description', '') or '' }}</textarea>{{ field_error(errors, 'description') }}</div>
+  </div>
+  <div class="form-actions">
+    <button class="btn btn-primary" type="submit"><i data-lucide="save" class="icon-sm"></i>{{ 'Save changes' if editing else 'Register item' }}</button>
+    <a class="btn" href="{{ url_for('item_detail', item_id=item.id) if editing else url_for('inventory') }}">Cancel</a>
+  </div>
+</form>
+</div></div>
+{% endblock %}

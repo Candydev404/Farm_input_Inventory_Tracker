@@ -1,0 +1,23 @@
+digraph F { rankdir=TB; graph [fontname="Helvetica", dpi=170, pad=0.25]; node [fontname="Helvetica", fontsize=11]; edge [fontname="Helvetica", fontsize=10]; nodesep=0.35; ranksep=0.32;
+ node [shape=box, style="rounded,filled", fillcolor="#f1f8f3", color="#1f6f43"];
+ s [shape=oval, label="Start: user opens\nRecord stock out\n(or lend a tool)", fillcolor="#e3f1e8"];
+ a [label="Select item, enter quantity, date,\nresponsible person, recipient"];
+ b [label="Browser shows current stock and warns\nif quantity is too large (convenience only)"];
+ c [label="Submit form (POST + CSRF token)"];
+ d1 [shape=diamond, style=filled, fillcolor="#ffffff", label="Logged in and\nCSRF token valid?"];
+ d2 [shape=diamond, style=filled, fillcolor="#ffffff", label="All fields valid?\n(qty > 0, date not future,\nrequired fields present)"];
+ t [label="BEGIN IMMEDIATE transaction;\nread current item quantity"];
+ d3 [shape=diamond, style=filled, fillcolor="#ffffff", label="Quantity requested\n<= quantity available?"];
+ u [label="UPDATE quantity = quantity - requested\n(guarded: WHERE quantity >= requested)"];
+ i [label="INSERT stock_transactions row\n(reference, balance after, who, recipient)"];
+ al [label="Re-evaluate stock status;\ncreate or clear LOW / OUT notification"];
+ au [label="Write audit log entry"];
+ cm [label="COMMIT", fillcolor="#e3f1e8"];
+ ok [shape=oval, label="Show confirmation with\ntransaction reference", fillcolor="#e3f1e8"];
+ r1 [label="Redirect to login / HTTP 400", fillcolor="#fde8e6", color="#b3261e"];
+ r2 [label="Redisplay form with\nfield error messages (HTTP 422)", fillcolor="#fde8e6", color="#b3261e"];
+ r3 [label="ROLLBACK; show\n\"Insufficient stock\" message", fillcolor="#fde8e6", color="#b3261e"];
+ s -> a -> b -> c -> d1; d1 -> d2 [label="yes"]; d1 -> r1 [label="no"];
+ d2 -> t [label="yes"]; d2 -> r2 [label="no"]; t -> d3; d3 -> u [label="yes"]; d3 -> r3 [label="no"];
+ u -> i -> al -> au -> cm -> ok;
+}

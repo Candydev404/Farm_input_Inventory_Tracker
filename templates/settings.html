@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% from "_macros.html" import field_error %}
+{% set admin = current_user.role == 'admin' %}
+{% block title %}Settings{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Settings</h1><p>Store details, your account, alert rules and system configuration.</p></div></div>
+
+<div class="grid-2e">
+  <div class="card"><div class="card-head"><h2>Store information</h2>{% if not admin %}<span class="badge sample">Administrator only</span>{% endif %}</div><div class="card-body">
+    <form method="post" data-validate novalidate><input type="hidden" name="_csrf" value="{{ csrf_token() }}"><input type="hidden" name="section" value="store">
+      <div class="form-grid">
+        <div class="field full {{ 'has-error' if errors.store_name }}"><label for="store_name">Store name <span class="req">*</span></label>
+          <input id="store_name" name="store_name" required value="{{ s.store_name }}" {{ 'disabled' if not admin }}>{{ field_error(errors, 'store_name') }}</div>
+        <div class="field full"><label for="store_address">Address</label><input id="store_address" name="store_address" value="{{ s.store_address }}" {{ 'disabled' if not admin }}></div>
+        <div class="field"><label for="store_phone">Phone</label><input id="store_phone" name="store_phone" value="{{ s.store_phone }}" {{ 'disabled' if not admin }}></div>
+        <div class="field"><label for="store_email">Email</label><input id="store_email" name="store_email" value="{{ s.store_email }}" {{ 'disabled' if not admin }}></div>
+      </div>
+      {% if admin %}<div class="form-actions"><button class="btn btn-primary" type="submit">Save store information</button></div>{% endif %}
+    </form></div></div>
+
+  <div class="card"><div class="card-head"><h2>My profile</h2></div><div class="card-body">
+    <form method="post" data-validate novalidate><input type="hidden" name="_csrf" value="{{ csrf_token() }}"><input type="hidden" name="section" value="profile">
+      <div class="form-grid">
+        <div class="field"><label>Username</label><input value="{{ user.username }}" disabled></div>
+        <div class="field"><label>Role</label><input value="{{ user.role|capitalize }}" disabled></div>
+        <div class="field {{ 'has-error' if errors.full_name }}"><label for="full_name">Full name <span class="req">*</span></label>
+          <input id="full_name" name="full_name" required value="{{ user.full_name }}">{{ field_error(errors, 'full_name') }}</div>
+        <div class="field {{ 'has-error' if errors.email }}"><label for="email">Email</label>
+          <input id="email" name="email" type="email" value="{{ user.email or '' }}">{{ field_error(errors, 'email') }}</div>
+      </div>
+      <div class="form-actions"><button class="btn btn-primary" type="submit">Save profile</button></div>
+    </form></div></div>
+</div>
+
+<div class="grid-2e">
+  <div class="card"><div class="card-head"><h2>Change password</h2></div><div class="card-body">
+    <form method="post" data-validate novalidate><input type="hidden" name="_csrf" value="{{ csrf_token() }}"><input type="hidden" name="section" value="password">
+      <div class="form-grid" style="grid-template-columns:1fr">
+        <div class="field {{ 'has-error' if errors.current_password }}"><label for="current_password">Current password</label>
+          <input id="current_password" name="current_password" type="password" required autocomplete="current-password">{{ field_error(errors, 'current_password') }}</div>
+        <div class="field {{ 'has-error' if errors.new_password }}"><label for="new_password">New password</label>
+          <input id="new_password" name="new_password" type="password" required autocomplete="new-password"><span class="hint">At least 8 characters, with a letter and a digit.</span>{{ field_error(errors, 'new_password') }}</div>
+        <div class="field {{ 'has-error' if errors.confirm_password }}"><label for="confirm_password">Confirm new password</label>
+          <input id="confirm_password" name="confirm_password" type="password" required autocomplete="new-password">{{ field_error(errors, 'confirm_password') }}</div>
+      </div>
+      <div class="form-actions"><button class="btn btn-primary" type="submit">Change password</button></div>
+    </form></div></div>
+
+  <div class="card"><div class="card-head"><h2>Alert preferences</h2>{% if not admin %}<span class="badge sample">Administrator only</span>{% endif %}</div><div class="card-body">
+    <form method="post" data-validate novalidate><input type="hidden" name="_csrf" value="{{ csrf_token() }}"><input type="hidden" name="section" value="alerts">
+      <div class="form-grid" style="grid-template-columns:1fr">
+        <div class="field {{ 'has-error' if errors.alert_basis }}"><label for="alert_basis">Raise a low-stock alert when quantity is</label>
+          <select id="alert_basis" name="alert_basis" {{ 'disabled' if not admin }}>
+            <option value="at_or_below" {{ 'selected' if s.alert_basis == 'at_or_below' }}>at or below the minimum threshold</option>
+            <option value="below" {{ 'selected' if s.alert_basis == 'below' }}>strictly below the minimum threshold</option></select>{{ field_error(errors, 'alert_basis') }}</div>
+        <div class="field {{ 'has-error' if errors.default_min_threshold }}"><label for="default_min_threshold">Default minimum threshold for new items</label>
+          <input id="default_min_threshold" name="default_min_threshold" type="number" step="any" min="0" required value="{{ s.default_min_threshold }}" {{ 'disabled' if not admin }}>{{ field_error(errors, 'default_min_threshold') }}</div>
+        {% for key, lbl, hint in [('forecast_days','Days of history used to measure daily use','Stock-out in this window sets the daily-use rate.'),('warn_days','Warn when stock will run out within (days)','Items under this cover appear in the reorder planner.'),('target_cover_days','Order enough to last (days)','Suggested order = daily use x this + minimum - in store.')] %}
+        <div class="field {{ 'has-error' if errors.get(key) }}"><label for="{{ key }}">{{ lbl }}</label>
+          <input id="{{ key }}" name="{{ key }}" type="number" step="1" min="1" max="365" required value="{{ s.get(key, '') }}" {{ 'disabled' if not admin }}>
+          <span class="hint">{{ hint }}</span>{{ field_error(errors, key) }}</div>
+        {% endfor %}
+      </div>
+      {% if admin %}<div class="form-actions"><button class="btn btn-primary" type="submit">Save alert preferences</button></div>{% endif %}
+    </form></div></div>
+</div>
+
+<div class="grid-2e">
+  <div class="card"><div class="card-head"><h2>System configuration</h2>{% if not admin %}<span class="badge sample">Administrator only</span>{% endif %}</div><div class="card-body">
+    <form method="post" data-validate novalidate><input type="hidden" name="_csrf" value="{{ csrf_token() }}"><input type="hidden" name="section" value="system">
+      <div class="form-grid">
+        <div class="field {{ 'has-error' if errors.currency }}"><label for="currency">Currency code</label>
+          <input id="currency" name="currency" maxlength="5" required value="{{ s.currency }}" {{ 'disabled' if not admin }}>{{ field_error(errors, 'currency') }}</div>
+        <div class="field {{ 'has-error' if errors.page_size }}"><label for="page_size">Rows per page</label>
+          <input id="page_size" name="page_size" type="number" min="5" max="100" required value="{{ s.page_size }}" {{ 'disabled' if not admin }}>{{ field_error(errors, 'page_size') }}</div>
+      </div>
+      {% if admin %}<div class="form-actions"><button class="btn btn-primary" type="submit">Save configuration</button></div>{% endif %}
+    </form></div></div>
+
+  {% if admin %}
+  <div class="card"><div class="card-head"><h2>Categories</h2></div><div class="card-body">
+    <table><tbody>
+      {% for c in cats %}<tr><td>{{ c.name }}</td><td class="muted">{{ c.n }} item{{ '' if c.n == 1 else 's' }}</td>
+        <td class="num">{% if c.n == 0 %}<form method="post" data-confirm-title="Delete category?" data-confirm="Delete the category '{{ c.name }}'?" style="display:inline">
+          <input type="hidden" name="_csrf" value="{{ csrf_token() }}"><input type="hidden" name="section" value="category_delete"><input type="hidden" name="category_id" value="{{ c.id }}">
+          <button class="btn btn-sm btn-ghost" type="submit" title="Delete"><i data-lucide="trash-2" class="icon-sm"></i></button></form>{% endif %}</td></tr>{% endfor %}
+    </tbody></table>
+    <form method="post" data-validate novalidate style="display:flex;gap:8px;margin-top:12px"><input type="hidden" name="_csrf" value="{{ csrf_token() }}"><input type="hidden" name="section" value="category_add">
+      <input name="category_name" maxlength="50" placeholder="New category name" required aria-label="New category name"><button class="btn btn-primary" type="submit">Add</button></form>
+  </div></div>
+  {% endif %}
+</div>
+
+{% if admin %}
+<div class="grid-2e">
+  <div class="card"><div class="card-head"><h2>Recent activity log</h2></div>
+    <div class="table-wrap"><table><thead><tr><th>When</th><th>User</th><th>Action</th><th>Detail</th></tr></thead><tbody>
+      {% for l in logs %}<tr><td class="nowrap">{{ l.created_at }}</td><td>{{ l.username or '-' }}</td><td>{{ l.action }}</td><td class="muted">{{ l.detail or '' }}</td></tr>
+      {% else %}<tr><td colspan="4" class="empty">No activity recorded yet.</td></tr>{% endfor %}</tbody></table></div></div>
+  <div class="card"><div class="card-head"><h2>Demonstration data</h2></div><div class="card-body">
+    <p class="muted" style="margin-top:0">{{ sample }} sample item{{ '' if sample == 1 else 's' }} currently loaded. Removing sample data deletes those items and every transaction recorded against them, leaving only your own records.</p>
+    <form method="post" data-confirm-title="Remove all sample data?" data-confirm="This permanently deletes the sample items and all of their transactions. Records you created for other items are kept.">
+      <input type="hidden" name="_csrf" value="{{ csrf_token() }}"><input type="hidden" name="section" value="remove_sample">
+      <button class="btn btn-danger" type="submit" {{ 'disabled' if not sample }}><i data-lucide="trash-2" class="icon-sm"></i>Remove sample data</button></form>
+  </div></div>
+</div>
+{% endif %}
+{% endblock %}

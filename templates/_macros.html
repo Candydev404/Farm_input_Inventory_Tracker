@@ -1,0 +1,51 @@
+{% macro status_badge(status) -%}
+  {%- if status == 'OUT' %}<span class="badge out">Out of stock</span>
+  {%- elif status == 'LOW' %}<span class="badge low">Low stock</span>
+  {%- else %}<span class="badge">In stock</span>{% endif -%}
+{%- endmacro %}
+
+{% macro type_badge(t) -%}
+  {%- if t == 'IN' %}<span class="badge in"><i data-lucide="arrow-down-to-line" class="icon-sm"></i>Stock in</span>
+  {%- elif t == 'LOAN' %}<span class="badge loan"><i data-lucide="hand-helping" class="icon-sm"></i>Lent</span>
+  {%- elif t == 'RETURN' %}<span class="badge ret"><i data-lucide="undo-2" class="icon-sm"></i>Returned</span>
+  {%- else %}<span class="badge outtx"><i data-lucide="arrow-up-from-line" class="icon-sm"></i>Stock out</span>{% endif -%}
+{%- endmacro %}
+
+{% macro gauge(qty, minimum, status) -%}
+  {% set top = [minimum * 2, qty * 1.05, 1]|max %}
+  <div class="gauge {{ 'out' if status == 'OUT' else ('low' if status == 'LOW') }}" title="{{ qty|qty }} in store, minimum {{ minimum|qty }}">
+    <i style="width:{{ (qty / top * 100)|round(1) }}%"></i><b style="left:{{ (minimum / top * 100)|round(1) }}%"></b></div>
+{%- endmacro %}
+
+{% macro cover(f, warn) -%}
+  {% if f.cover is none %}<span class="muted">No recent use</span>
+  {% else %}<div class="cover"><div class="bar {{ 'red' if f.cover <= warn / 2 }}"><i style="width:{{ [f.cover / (warn * 2) * 100, 100]|min|round(1) }}%"></i></div>
+    <span class="d">{{ f.cover|round(0)|int }} d</span></div>{% endif %}
+{%- endmacro %}
+
+{% macro pager(pg, endpoint, args) -%}
+  <div class="pager">
+    <span>{% if pg.total %}Showing {{ pg.offset + 1 }}-{{ [pg.offset + pg.per_page, pg.total]|min }} of {{ pg.total }}{% else %}No records{% endif %}</span>
+    {% if pg.pages > 1 %}
+    <div class="links">
+      <a class="{{ 'dis' if pg.page <= 1 }}" href="{{ url_for(endpoint, **dict(args, page=pg.page-1)) }}">Previous</a>
+      {% for n in range(1, pg.pages + 1) %}
+        {% if n == pg.page %}<span class="cur">{{ n }}</span>
+        {% elif n == 1 or n == pg.pages or (n - pg.page)|abs <= 1 %}<a href="{{ url_for(endpoint, **dict(args, page=n)) }}">{{ n }}</a>
+        {% elif (n - pg.page)|abs == 2 %}<span>...</span>{% endif %}
+      {% endfor %}
+      <a class="{{ 'dis' if pg.page >= pg.pages }}" href="{{ url_for(endpoint, **dict(args, page=pg.page+1)) }}">Next</a>
+    </div>
+    {% endif %}
+  </div>
+{%- endmacro %}
+
+{% macro sort_th(label, key, args, endpoint, cls='') -%}
+  {% set nxt = 'desc' if (args.sort == key and args.order == 'asc') else 'asc' %}
+  <th class="{{ cls }}"><a href="{{ url_for(endpoint, **dict(args, sort=key, order=nxt, page=1)) }}">{{ label }}
+    {% if args.sort == key %}<i data-lucide="{{ 'arrow-up' if args.order == 'asc' else 'arrow-down' }}" class="icon-sm"></i>{% endif %}</a></th>
+{%- endmacro %}
+
+{% macro field_error(errors, key) -%}
+  <span class="err" data-err-for="{{ key }}" {% if errors.get(key) %}data-server="1"{% endif %}>{{ errors.get(key, '') }}</span>
+{%- endmacro %}

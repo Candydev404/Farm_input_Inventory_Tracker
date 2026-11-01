@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% from "_macros.html" import status_badge, cover %}
+{% block title %}Alerts &amp; reorder{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><div class="kicker">Restock before it runs out</div><h1>Alerts &amp; reorder planner</h1>
+    <p>Items at or below minimum, plus items forecast to run out within {{ warn }} days. Daily use is the stock-out total of the last {{ days }} days; lending a tool is not counted as use.</p></div>
+  <div class="actions">
+    <a class="btn btn-primary" href="{{ url_for('reports', kind='reorder') }}"><i data-lucide="clipboard-list" class="icon-sm"></i>Purchase list by supplier</a>
+    <a class="btn" href="{{ url_for('reports', kind='low_stock') }}"><i data-lucide="file-bar-chart" class="icon-sm"></i>Low-stock report</a>
+    {% if unread_alerts %}
+    <form method="post" action="{{ url_for('alerts_mark_read') }}"><input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+      <button class="btn" type="submit"><i data-lucide="check-check" class="icon-sm"></i>Mark notifications read</button></form>
+    {% endif %}
+  </div>
+</div>
+<div class="stats">
+  <div class="stat warn"><div class="val">{{ counts['low'] or 0 }}</div><div class="lbl">Low stock</div></div>
+  <div class="stat bad"><div class="val">{{ counts['out_'] or 0 }}</div><div class="lbl">Out of stock</div></div>
+  <div class="stat"><div class="val">{{ plan|length }}</div><div class="lbl">Items to order</div></div>
+  <div class="stat info"><div class="val">{{ plan_cost|money }}</div><div class="lbl">Estimated cost</div></div>
+</div>
+
+<div class="card" style="margin-bottom:18px">
+  <div class="card-head"><h2>Reorder planner</h2><span class="muted">Order enough for {{ target }} days of use, plus the minimum</span></div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Item</th><th>Status</th><th class="num">In store</th><th class="num">Use / day</th><th>Days of cover</th><th class="num">Suggested order</th><th class="num">Est. cost</th><th>Supplier</th></tr></thead>
+    <tbody>
+    {% for d in plan %}
+      <tr><td><a href="{{ url_for('item_detail', item_id=d.id) }}">{{ d.name }}</a><span class="sub ref">{{ d.item_code }}</span></td>
+          <td>{{ status_badge(d.status) }}</td>
+          <td class="num">{{ d.quantity|qty }} {{ d.unit }}</td>
+          <td class="num">{{ ('%.2f' % d.daily) if d.daily else '-' }}</td>
+          <td style="min-width:140px">{{ cover(d, warn) }}</td>
+          <td class="num"><b>{{ d.suggested|qty }} {{ d.unit }}</b></td>
+          <td class="num">{{ d.cost|money }}</td>
+          <td>{{ d.sup or 'No supplier' }}<a class="btn btn-sm" style="margin-left:8px" href="{{ url_for('stock_in', item_id=d.id) }}"><i data-lucide="arrow-down-to-line" class="icon-sm"></i>Receive</a></td></tr>
+    {% else %}<tr><td colspan="8" class="empty">Nothing needs ordering right now.</td></tr>{% endfor %}
+    </tbody></table></div>
+</div>
+
+<div class="grid-2" style="grid-template-columns:minmax(0,2.4fr) minmax(0,1fr)">
+  <div class="card">
+    <div class="card-head"><h2>Items at or below minimum</h2></div>
+    <form class="filters" method="get" action="{{ url_for('alerts') }}">
+      <div class="field"><label for="status">Show</label><select id="status" name="status" data-autosubmit>
+        <option value="all" {{ 'selected' if flt == 'all' }}>All affected items</option>
+        <option value="low" {{ 'selected' if flt == 'low' }}>Low stock only</option>
+        <option value="out" {{ 'selected' if flt == 'out' }}>Out of stock only</option></select></div>
+      <div class="field"><label for="category">Category</label><select id="category" name="category" data-autosubmit><option value="">All categories</option>
+        {% for c in categories %}<option value="{{ c.id }}" {{ 'selected' if cat == c.id|string }}>{{ c.name }}</option>{% endfor %}</select></div>
+    </form>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Item</th><th>Category</th><th class="num">In stock</th><th class="num">Minimum</th><th class="num">Shortfall</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+      {% for i in items %}
+        <tr><td><a href="{{ url_for('item_detail', item_id=i.id) }}">{{ i.name }}</a><span class="sub">{{ i.item_code }} - {{ i.supplier or 'No supplier' }}</span></td>
+            <td>{{ i.category }}</td><td class="num">{{ i.quantity|qty }} {{ i.unit }}</td><td class="num">{{ i.min_threshold|qty }}</td>
+            <td class="num">{{ [i.min_threshold - i.quantity, 0]|max|qty }}</td><td>{{ status_badge(i.status) }}</td>
+            <td><a class="btn btn-sm" href="{{ url_for('stock_in', item_id=i.id) }}"><i data-lucide="arrow-down-to-line" class="icon-sm"></i>Restock</a></td></tr>
+      {% else %}<tr><td colspan="7" class="empty">No items match. Stock levels are healthy.</td></tr>{% endfor %}
+      </tbody></table></div>
+  </div>
+  <div class="card">
+    <div class="card-head"><h2>Recent notifications</h2></div>
+    <div class="table-wrap"><table><tbody>
+      {% for n in notes %}
+        <tr><td><span class="badge {{ 'out' if n.kind == 'OUT' else 'low' }}">{{ 'Out' if n.kind == 'OUT' else 'Low' }}</span></td>
+            <td>{{ n.message }}<span class="sub">{{ n.created_at }}{{ ' - resolved or acknowledged' if n.is_read else '' }}</span></td></tr>
+      {% else %}<tr><td class="empty">No notifications yet.</td></tr>{% endfor %}
+    </tbody></table></div>
+  </div>
+</div>
+{% endblock %}

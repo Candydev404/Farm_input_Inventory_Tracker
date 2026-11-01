@@ -1,0 +1,9 @@
+{% if session.get('user_id') %}{% extends "base.html" %}{% else %}{% extends "bare.html" %}{% endif %}
+{% block title %}Error {{ code }}{% endblock %}
+{% block content %}
+<div class="card" style="max-width:520px;margin:40px auto"><div class="card-body" style="text-align:center">
+  <h1>{{ code }}</h1>
+  <p class="muted">{{ message }}</p>
+  <a class="btn btn-primary" href="{{ url_for('dashboard') }}">Back to dashboard</a>
+</div></div>
+{% endblock %}

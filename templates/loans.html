@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% from "_macros.html" import type_badge %}
+{% block title %}Tool loans{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><div class="kicker">Tools go out and come back</div><h1>Tool loans</h1>
+    <p>Hoes, sprayers and other returnable tools are lent to a person, not used up. Lending lowers the store count; returning puts it back. {{ tools }} item{{ 's' if tools != 1 }} marked returnable.</p></div>
+  <div class="actions">
+    <a class="btn btn-primary" href="{{ url_for('stock_lend') }}"><i data-lucide="hand-helping" class="icon-sm"></i>Lend a tool</a>
+    <a class="btn" href="{{ url_for('stock_return') }}"><i data-lucide="undo-2" class="icon-sm"></i>Record a return</a>
+    <a class="btn" href="{{ url_for('reports', kind='loans') }}"><i data-lucide="file-bar-chart" class="icon-sm"></i>Loans report</a>
+  </div>
+</div>
+<div class="card" style="margin-bottom:18px">
+  <div class="card-head"><h2>Currently out</h2><span class="muted">{{ loans|length }} open loan{{ 's' if loans|length != 1 }}</span></div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Tool</th><th>Borrower</th><th class="num">Held</th><th>Last lent</th><th class="num">Days out</th><th></th></tr></thead>
+    <tbody>
+    {% for l in loans %}
+      <tr><td><a href="{{ url_for('item_detail', item_id=l.item_id) }}">{{ l.name }}</a><span class="sub ref">{{ l.item_code }}</span></td>
+          <td>{{ l.borrower }}</td><td class="num">{{ l.held|qty }} {{ l.unit }}</td><td class="nowrap">{{ l.last_loan }}</td>
+          <td class="num">{{ l.days_out }}</td>
+          <td><a class="btn btn-sm" href="{{ url_for('stock_return', item_id=l.item_id, borrower=l.borrower) }}"><i data-lucide="undo-2" class="icon-sm"></i>Return</a></td></tr>
+    {% else %}<tr><td colspan="6" class="empty">No tools are on loan.</td></tr>{% endfor %}
+    </tbody></table></div>
+</div>
+<div class="card">
+  <div class="card-head"><h2>Recent lending and returns</h2><a href="{{ url_for('stock_history', type='LOAN') }}">Ledger</a></div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Date</th><th>Tool</th><th>Type</th><th class="num">Quantity</th><th>Borrower</th><th>Recorded by</th></tr></thead>
+    <tbody>
+    {% for t in recent %}
+      <tr><td class="nowrap">{{ t.txn_date }}</td><td><a href="{{ url_for('item_detail', item_id=t.item_id) }}">{{ t.item_name }}</a>{% if t.is_sample %} <span class="badge sample">Sample</span>{% endif %}<span class="sub ref">{{ t.reference }}</span></td>
+          <td>{{ type_badge(t.txn_type) }}</td><td class="num">{{ t.quantity|qty }} {{ t.unit }}</td><td>{{ t.counterparty }}</td><td>{{ t.responsible }}</td></tr>
+    {% else %}<tr><td colspan="6" class="empty">No loans recorded yet.</td></tr>{% endfor %}
+    </tbody></table></div>
+</div>
+{% endblock %}

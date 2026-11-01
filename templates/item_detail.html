@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% from "_macros.html" import status_badge, type_badge, pager %}
+{% block title %}{{ item.name }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>{{ item.name }} {{ status_badge(item.status) }}{% if item.is_sample %} <span class="badge sample">Sample</span>{% endif %}</h1>
+    <p><span class="ref">{{ item.item_code }}</span> - {{ item.category }}{% if item.is_returnable %} - <span class="badge tool">Returnable tool</span>{% endif %}</p></div>
+  <div class="actions">
+    <a class="btn" href="{{ url_for('stock_in', item_id=item.id) }}"><i data-lucide="arrow-down-to-line" class="icon-sm"></i>Stock in</a>
+    {% if item.is_returnable %}
+    <a class="btn" href="{{ url_for('stock_lend', item_id=item.id) }}"><i data-lucide="hand-helping" class="icon-sm"></i>Lend</a>
+    <a class="btn" href="{{ url_for('stock_return', item_id=item.id) }}"><i data-lucide="undo-2" class="icon-sm"></i>Return</a>
+    {% else %}
+    <a class="btn" href="{{ url_for('stock_out', item_id=item.id) }}"><i data-lucide="arrow-up-from-line" class="icon-sm"></i>Stock out</a>
+    {% endif %}
+    <a class="btn" href="{{ url_for('reports', kind='item', item_id=item.id) }}"><i data-lucide="file-bar-chart" class="icon-sm"></i>Item report</a>
+    <a class="btn" href="{{ url_for('item_edit', item_id=item.id) }}"><i data-lucide="pencil" class="icon-sm"></i>Edit</a>
+    <form method="post" action="{{ url_for('item_delete', item_id=item.id) }}" data-confirm-title="Delete {{ item.name }}?"
+          data-confirm="{{ 'This item has ' ~ total_txns ~ ' recorded transactions. Deleting it permanently removes the item.' if total_txns else 'This permanently removes the item.' }}"
+          {% if total_txns %}data-confirm-check="Also permanently delete its {{ total_txns }} transaction records"{% endif %}>
+      <input type="hidden" name="_csrf" value="{{ csrf_token() }}"><input type="hidden" name="with_history" value="">
+      <button class="btn btn-danger" type="submit"><i data-lucide="trash-2" class="icon-sm"></i>Delete</button>
+    </form>
+  </div>
+</div>
+<div class="grid-2e">
+  <div class="card"><div class="card-head"><h2>Item details</h2></div><div class="card-body">
+    <dl class="kv">
+      <dt>Item ID</dt><dd>{{ item.item_code }}</dd>
+      <dt>Category</dt><dd>{{ item.category }}</dd>
+      <dt>Description</dt><dd>{{ item.description or 'No description' }}</dd>
+      <dt>Supplier</dt><dd>{{ item.supplier or 'None recorded' }}</dd>
+      <dt>Unit of measurement</dt><dd>{{ item.unit }}</dd>
+      <dt>Unit purchase price</dt><dd>{{ item.unit_price|money }}</dd>
+      <dt>Date registered</dt><dd>{{ item.created_at }}</dd>
+      <dt>Last updated</dt><dd>{{ item.updated_at }}</dd>
+    </dl></div></div>
+  <div class="card"><div class="card-head"><h2>Stock position</h2></div><div class="card-body">
+    <dl class="kv">
+      <dt>Quantity available</dt><dd><strong>{{ item.quantity|qty }} {{ item.unit }}</strong></dd>
+      <dt>Minimum threshold</dt><dd>{{ item.min_threshold|qty }} {{ item.unit }}</dd>
+      <dt>Stock value</dt><dd>{{ (item.quantity * item.unit_price)|money }}</dd>
+      <dt>Total received</dt><dd>{{ sums['a']|qty }} {{ item.unit }}</dd>
+      <dt>Total issued</dt><dd>{{ sums['b']|qty }} {{ item.unit }}</dd>
+      <dt>Transactions</dt><dd>{{ total_txns }}</dd>
+      {% if item.is_returnable %}<dt>On loan</dt><dd>{% for l in loans %}{{ l.held|qty }} {{ item.unit }} with {{ l.borrower }} ({{ l.days_out }} d)<br>{% else %}None{% endfor %}</dd>
+      {% elif fc %}<dt>Use per day</dt><dd>{{ ('%.2f' % fc.daily) if fc.daily else 'No recent use' }}</dd>
+      <dt>Forecast</dt><dd>{% if fc.cover is none %}No recent use to forecast from{% else %}About {{ fc.cover|round(0)|int }} days of cover{% if fc.cover <= warn %} - below the {{ warn }}-day warning{% endif %}{% endif %}</dd>
+      {% if fc.need and fc.suggested %}<dt>Suggested order</dt><dd><strong>{{ fc.suggested|qty }} {{ item.unit }}</strong> ({{ fc.cost|money }})</dd>{% endif %}{% endif %}
+    </dl></div></div>
+</div>
+<div class="card">
+  <div class="card-head"><h2>Transaction history</h2></div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Date</th><th>Reference</th><th>Type</th><th class="num">Quantity</th><th class="num">Balance after</th><th>Supplier / recipient</th><th>Responsible</th></tr></thead>
+    <tbody>
+    {% for t in txns %}
+      <tr><td class="nowrap">{{ t.txn_date }}</td><td class="nowrap ref">{{ t.reference }}</td><td>{{ type_badge(t.txn_type) }}</td>
+          <td class="num">{{ t.quantity|qty }}</td><td class="num">{{ t.balance_after|qty }}</td>
+          <td>{{ t.counterparty or '-' }}{% if t.notes %}<span class="sub">{{ t.notes }}</span>{% endif %}</td><td>{{ t.responsible }}</td></tr>
+    {% else %}<tr><td colspan="7" class="empty">No transactions recorded for this item.</td></tr>{% endfor %}
+    </tbody></table></div>
+  {{ pager(pg, 'item_detail', {'item_id': item.id}) }}
+</div>
+{% endblock %}

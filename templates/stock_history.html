@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% from "_macros.html" import type_badge, pager %}
+{% block title %}Stock ledger{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><div class="kicker">The ledger</div><h1>Stock ledger</h1><p>Complete, permanent record of every stock movement, including tool loans and returns.</p></div>
+  <div class="actions">
+    <a class="btn" href="{{ url_for('stock_in') }}"><i data-lucide="arrow-down-to-line" class="icon-sm"></i>Stock in</a>
+    <a class="btn btn-primary" href="{{ url_for('stock_out') }}"><i data-lucide="arrow-up-from-line" class="icon-sm"></i>Stock out</a>
+    <a class="btn" href="{{ url_for('stock_lend') }}"><i data-lucide="hand-helping" class="icon-sm"></i>Lend tool</a>
+  </div>
+</div>
+<div class="card">
+  <form class="filters" method="get" action="{{ url_for('stock_history') }}">
+    <div class="field" style="flex:1;min-width:180px"><label for="q">Search</label><input id="q" name="q" value="{{ args.q }}" placeholder="Reference, item, person"></div>
+    <div class="field"><label for="type">Type</label><select id="type" name="type" data-autosubmit>
+      <option value="">All</option><option value="IN" {{ 'selected' if args.type == 'IN' }}>Stock in</option><option value="OUT" {{ 'selected' if args.type == 'OUT' }}>Stock out</option><option value="LOAN" {{ 'selected' if args.type == 'LOAN' }}>Lent</option><option value="RETURN" {{ 'selected' if args.type == 'RETURN' }}>Returned</option></select></div>
+    <div class="field"><label for="item_id">Item</label><select id="item_id" name="item_id" data-autosubmit><option value="">All items</option>
+      {% for i in items %}<option value="{{ i.id }}" {{ 'selected' if args.item_id == i.id|string }}>{{ i.name }}</option>{% endfor %}</select></div>
+    <div class="field"><label for="date_from">From</label><input id="date_from" type="date" name="date_from" value="{{ args.date_from }}"></div>
+    <div class="field"><label for="date_to">To</label><input id="date_to" type="date" name="date_to" value="{{ args.date_to }}"></div>
+    <button class="btn" type="submit"><i data-lucide="search" class="icon-sm"></i>Filter</button>
+    {% if args.q or args.type or args.item_id or args.date_from or args.date_to %}<a class="btn btn-ghost" href="{{ url_for('stock_history') }}">Clear</a>{% endif %}
+  </form>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Date</th><th>Reference</th><th>Item</th><th>Type</th><th class="num">Quantity</th><th class="num">Balance after</th><th>Supplier / recipient</th><th>Responsible</th></tr></thead>
+    <tbody>
+    {% for t in rows %}
+      <tr><td class="nowrap">{{ t.txn_date }}</td><td class="nowrap ref">{{ t.reference }}{% if t.is_sample %} <span class="badge sample">Sample</span>{% endif %}</td>
+          <td><a href="{{ url_for('item_detail', item_id=t.item_id) }}">{{ t.item_name }}</a><span class="sub">{{ t.item_code }}</span></td>
+          <td>{{ type_badge(t.txn_type) }}</td>
+          <td class="num">{{ t.quantity|qty }} {{ t.unit }}</td><td class="num">{{ t.balance_after|qty }}</td>
+          <td>{{ t.counterparty or '-' }}{% if t.notes %}<span class="sub">{{ t.notes }}</span>{% endif %}</td><td>{{ t.responsible }}</td></tr>
+    {% else %}<tr><td colspan="8" class="empty">No transactions match the filters.</td></tr>{% endfor %}
+    </tbody></table></div>
+  {{ pager(pg, 'stock_history', args) }}
+</div>
+{% endblock %}

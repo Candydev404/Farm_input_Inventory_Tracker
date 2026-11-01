@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sign in | Farm Input Inventory Tracker</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+<div class="login-wrap">
+  <section class="login-art">
+    <div class="brand" style="padding:0;border:0">
+      <svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="6" fill="#2e6b3b"/><path d="M5 24 Q16 17 27 24 M5 19 Q16 12 27 19 M5 14 Q16 7 27 14" fill="none" stroke="#f0b44a" stroke-width="2" stroke-linecap="round"/></svg>
+      <span><b>Field Ledger</b><small>NS-CSC 229 | Group 30</small></span>
+    </div>
+    <div>
+      <h1>Know what is on the shelf <em>before</em> the season starts.</h1>
+      <p style="color:#cdbf9f;max-width:420px">Seeds, fertilizer and tools for a small farm store: every receipt, issue and loan written down, and a warning before anything runs out.</p>
+      <ul>
+        <li><i data-lucide="package"></i>Item records with categories and thresholds</li>
+        <li><i data-lucide="arrow-left-right"></i>Tools lent out and returned, never lost</li>
+        <li><i data-lucide="triangle-alert"></i>Run-out forecast and a ready reorder list</li>
+        <li><i data-lucide="file-bar-chart"></i>Usage, valuation and movement reports</li>
+      </ul>
+    </div>
+    <small style="color:#b9a98a">Academic project prototype. Demonstration data only.</small>
+  </section>
+  <section class="login-form">
+    <div class="login-box">
+      <h2>Sign in</h2>
+      <p class="muted" style="margin:0 0 20px">Use your store account to continue.</p>
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for cat, msg in messages %}<div class="flash {{ cat }}" style="margin-bottom:12px">{{ msg }}</div>{% endfor %}
+      {% endwith %}
+      {% if error %}<div class="flash error" role="alert" style="margin-bottom:12px">{{ error }}</div>{% endif %}
+      <form method="post" data-validate novalidate>
+        <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+        <div class="field" style="margin-bottom:14px">
+          <label for="username">Username</label>
+          <input id="username" name="username" autocomplete="username" required autofocus>
+          <span class="err" data-err-for="username"></span>
+        </div>
+        <div class="field" style="margin-bottom:18px">
+          <label for="password">Password</label>
+          <input id="password" name="password" type="password" autocomplete="current-password" required>
+          <span class="err" data-err-for="password"></span>
+        </div>
+        <button class="btn btn-primary btn-block" type="submit"><i data-lucide="log-in" class="icon-sm"></i>Sign in</button>
+      </form>
+      <div class="demo-cred">
+        <strong>Demonstration accounts</strong><br>
+        Administrator: <code>admin</code> / <code>Admin@123</code><br>
+        Storekeeper: <code>storekeeper</code> / <code>Store@123</code><br>
+        <span class="muted">Change these in Settings before any real use.</span>
+      </div>
+    </div>
+  </section>
+</div>
+<script src="{{ url_for('static', filename='vendor/lucide.min.js') }}"></script>
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

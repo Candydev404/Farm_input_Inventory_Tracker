@@ -1,0 +1,9 @@
+digraph D0 { rankdir=LR; graph [fontname="Helvetica", dpi=170, pad=0.25]; node [fontname="Helvetica", fontsize=11]; edge [fontname="Helvetica", fontsize=10];
+ node [fontsize=11];
+ ext [shape=box, label="Storekeeper /\nAdministrator", style=filled, fillcolor="#fff7e6", color="#b26a00", penwidth=1.4];
+ p [shape=circle, label="0\nFarm Input\nInventory\nTracker", style=filled, fillcolor="#e3f1e8", color="#1f6f43", penwidth=1.6, width=1.9];
+ ext -> p [label="login details; item data; stock-in / stock-out entries;\nreport requests; settings changes"];
+ p -> ext [label="dashboard; item lists; confirmations and error messages;\nlow-stock alerts; reports (screen, print, PDF, CSV)"];
+ note [shape=note, fontsize=9, label="Suppliers and recipients are recorded as text on\ntransactions; they do not use the system directly.", color="#8aa597"];
+ p -> note [style=invis];
+}

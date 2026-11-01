@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% from "_macros.html" import status_badge, type_badge, cover %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+{% set attention = (totals['low'] or 0) + (totals['out_'] or 0) %}
+<div class="hero">
+  <div class="hero-main">
+    <div class="kicker">{{ store_name }} &middot; {{ today }}</div>
+    {% if attention or soon %}
+    <h1>{% if attention %}<em>{{ attention }} item{{ 's' if attention != 1 }}</em> at or below minimum{% endif %}{% if attention and soon %}, and <em>{{ soon }} more</em> will run out within {{ warn }} days.{% elif soon %}<em>{{ soon }} item{{ 's' if soon != 1 }}</em> will run out within {{ warn }} days.{% else %}.{% endif %}</h1>
+    <p>Restock before the shelves go empty. The reorder planner has a purchase list worked out from recent use.</p>
+    {% else %}
+    <h1>Every shelf is <em class="ok">above its minimum</em> and nothing is forecast to run out within {{ warn }} days.</h1>
+    <p>Record stock movements as they happen and this page will warn you early.</p>
+    {% endif %}
+    <div class="actions">
+      <a class="btn btn-primary" href="{{ url_for('alerts') }}"><i data-lucide="clipboard-list" class="icon-sm"></i>Reorder planner</a>
+      <a class="btn" href="{{ url_for('stock_in') }}"><i data-lucide="arrow-down-to-line" class="icon-sm"></i>Stock in</a>
+      <a class="btn" href="{{ url_for('stock_out') }}"><i data-lucide="arrow-up-from-line" class="icon-sm"></i>Stock out</a>
+      <a class="btn" href="{{ url_for('stock_lend') }}"><i data-lucide="hand-helping" class="icon-sm"></i>Lend tool</a>
+    </div>
+  </div>
+  <div class="hero-side">
+    <div class="row"><span class="k">Tools on loan</span><span class="v">{{ loan_units|qty }}</span></div>
+    <div class="row"><span class="k">Borrowers holding tools</span><span class="v">{{ loans|length }}</span></div>
+    <div class="row"><span class="k">Suggested reorder cost</span><span class="v">{{ reorder_cost|money }}</span></div>
+  </div>
+</div>
+
+{% if sample %}
+<div class="banner"><i data-lucide="info"></i>
+  <span>Demonstration data is loaded ({{ sample }} sample items, marked <span class="badge sample">Sample</span>). Real records you add are not marked.
+  {% if current_user.role == 'admin' %}An administrator can remove all sample data under <a href="{{ url_for('settings') }}">Settings</a>.{% endif %}</span>
+</div>
+{% endif %}
+
+<div class="stats">
+  <div class="stat"><div class="val">{{ totals['items'] }}</div><div class="lbl">Registered items</div></div>
+  <div class="stat"><div class="val">{{ totals['stock']|qty }}</div><div class="lbl">Units in store</div></div>
+  <div class="stat warn"><div class="val">{{ totals['low'] or 0 }}</div><div class="lbl">Low stock</div></div>
+  <div class="stat bad"><div class="val">{{ totals['out_'] or 0 }}</div><div class="lbl">Out of stock</div></div>
+  <div class="stat"><div class="val">{{ mv['rin']|qty }}</div><div class="lbl">Units received</div></div>
+  <div class="stat info"><div class="val">{{ mv['rout']|qty }}</div><div class="lbl">Units issued</div></div>
+</div>
+
+<div class="grid-2">
+  <div class="card">
+    <div class="card-head"><h2>Running out soonest</h2><a href="{{ url_for('alerts') }}">Full planner</a></div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Item</th><th>Status</th><th>Days of cover</th><th class="num">Order</th></tr></thead>
+      <tbody>
+      {% for d in watch %}
+        <tr><td><a href="{{ url_for('item_detail', item_id=d.id) }}">{{ d.name }}</a><span class="sub">{{ d.quantity|qty }} {{ d.unit }} in store, minimum {{ d.min_threshold|qty }}</span></td>
+            <td>{{ status_badge(d.status) }}</td><td style="min-width:150px">{{ cover(d, warn) }}</td>
+            <td class="num">{{ d.suggested|qty }} {{ d.unit }}</td></tr>
+      {% else %}<tr><td colspan="4" class="empty">Nothing needs ordering.</td></tr>{% endfor %}
+      </tbody></table></div>
+  </div>
+  <div class="card">
+    <div class="card-head"><h2>Tools out in the field</h2><a href="{{ url_for('loans') }}">All loans</a></div>
+    {% if loans %}<div class="table-wrap"><table><tbody>
+      {% for l in loans[:6] %}
+        <tr><td>{{ l.name }}<span class="sub">{{ l.borrower }} &middot; {{ l.days_out }} day{{ 's' if l.days_out != 1 }}</span></td>
+            <td class="num">{{ l.held|qty }} {{ l.unit }}</td></tr>
+      {% endfor %}</tbody></table></div>
+    {% else %}<div class="empty">No tools are on loan.</div>{% endif %}
+  </div>
+</div>
+
+<div class="grid-2">
+  <div class="card">
+    <div class="card-head"><h2>Stock movement overview</h2><span class="muted">Last 12 weeks</span></div>
+    <div class="card-body"><div class="chart-box"><canvas id="chart-movement" role="img" aria-label="Weekly stock in and stock out"></canvas></div></div>
+  </div>
+  <div class="card">
+    <div class="card-head"><h2>Items by category</h2></div>
+    <div class="card-body"><div class="chart-box"><canvas id="chart-category" role="img" aria-label="Item count per category"></canvas></div></div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-head"><h2>Latest ledger entries</h2><a href="{{ url_for('stock_history') }}">View all</a></div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Date</th><th>Item</th><th>Type</th><th class="num">Quantity</th><th>By</th></tr></thead>
+    <tbody>
+    {% for t in recent %}
+      <tr><td class="nowrap">{{ t.txn_date }}</td>
+          <td><a href="{{ url_for('item_detail', item_id=t.item_id) }}">{{ t.item_name }}</a>{% if t.is_sample %} <span class="badge sample">Sample</span>{% endif %}
+              <span class="sub ref">{{ t.reference }}</span></td>
+          <td>{{ type_badge(t.txn_type) }}</td>
+          <td class="num">{{ t.quantity|qty }} {{ t.unit }}</td><td>{{ t.responsible }}</td></tr>
+    {% else %}<tr><td colspan="5" class="empty">No stock movements yet.</td></tr>{% endfor %}
+    </tbody></table></div>
+</div>
+
+<script type="application/json" id="dash-data">{{ chart|tojson }}</script>
+{% endblock %}

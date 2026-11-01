@@ -1,0 +1,13 @@
+digraph U { rankdir=LR; graph [fontname="Helvetica", dpi=170, pad=0.25]; node [fontname="Helvetica", fontsize=11]; edge [fontname="Helvetica", fontsize=10]; ranksep=1.2;
+ node [shape=box, style=filled, fillcolor="#ffffff", color="#1f6f43", penwidth=1.4, margin="0.2,0.12"];
+ sk [label="<<actor>>\nStorekeeper"]; ad [label="<<actor>>\nAdministrator"];
+ subgraph cluster_sys { label="Farm Input Inventory Tracker (system boundary)"; style="rounded"; color="#8aa597";
+  node [shape=ellipse, fillcolor="#f1f8f3"];
+  u1 [label="Log in / log out"]; u2 [label="Manage inventory items\n(add, edit, view, search)"]; u3 [label="Record stock in"]; u4 [label="Record stock out"];
+  u5 [label="View transaction history"]; u6 [label="Monitor low-stock alerts"]; u7 [label="Generate reports\n(print, PDF, CSV)"]; u8 [label="Update own profile\nand password"];
+  u9 [label="Delete item\n(with history)"]; u10 [label="Configure store, alert rules\nand system settings"]; u11 [label="Manage categories"]; u13 [label="Lend tool / record return"]; u14 [label="View reorder planner\n(run-out forecast)"]; u12 [label="View activity log;\nremove sample data"]; }
+ sk -> u1; sk -> u2; sk -> u3; sk -> u4; sk -> u5; sk -> u6; sk -> u7; sk -> u8; sk -> u13; sk -> u14;
+ ad -> u9; ad -> u10; ad -> u11; ad -> u12;
+ ad -> sk [arrowhead=empty, label="inherits all\nstorekeeper use cases", style=dashed];
+ {rank=same; sk; ad}
+}
